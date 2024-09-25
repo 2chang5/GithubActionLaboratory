@@ -10,6 +10,10 @@ material = "1.10.0"
 activity = "1.8.0"
 constraintlayout = "2.1.4"
 
+# fireBase
+fireBasePlugIn = "4.4.2"
+fireBaseBom = "33.3.0"
+
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -20,7 +24,15 @@ material = { group = "com.google.android.material", name = "material", version.r
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 
+# fireBase // bom 쓰는데 왜 저거 애널리틱스 제대로 안돌아가는지 모르겠지만 지금 그게 문제가 아니라 걍 버전박음
+fireBaseBom = { module = "com.google.firebase:firebase-bom", version.ref = "fireBaseBom" }
+# googleAnalytics
+fireBaseAnalyticsKtx = { module = "com.google.firebase:firebase-analytics" ,version = "22.1.0"}
+
+[bundles]
+firebase = ["fireBaseBom", "fireBaseAnalyticsKtx"]
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-
+fireBasePlugIn = { id = "com.google.gms.google-services", version.ref = "fireBasePlugIn" }
