@@ -1,5 +1,6 @@
 
-name: Android CI
+name: TestDistribution
+## 워크플로 설명문을 참고하시오
 
 # 트리거 ('테스트_배포' 라벨이 이슈에 라벨링 되는 시점)
 on:
