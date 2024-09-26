@@ -13,26 +13,52 @@ jobs:
   # 첫번째 작업 이슈내 입력값 테스터, 출시노트 긁어오는 작업
   ReleaseNoteInputByIssue:
     runs-on: ubuntu-latest
+    outputs:
+      tester_group: ${{ steps.get_tester_group.outputs.tester_group }}
+      release_note: ${{ steps.get_release_note.outputs.release_note }}
     steps:
-      # 이슈의 본문자체를 끌어오는 작업 (환경변수 WHOLE_ISSUE에 저장)
+      # 이슈의 본문자체를 끌어오는 작업
       - name: GetWholeIssueString
         id: get_whole_issue
         run: |
           WHOLE_ISSUE=$(jq -r '.issue.body' < $GITHUB_EVENT_PATH)
-          echo "::set-output name=whole_issue::WHOLE_ISSUE"
+          echo "::set-output name=whole_issue::$WHOLE_ISSUE"
         # 설명: jq -> 제이슨을 다루는 명령어도구 제이슨 스트림을 다룰수 있음 $GITHUB_EVENT_PATH 에 제이슨 형태로 해당 이벤트의 정보가 담겨서 넘어옴 그래서 추출해서 raw data 형태로(-r 옵션)을 통해 본문 추출)
 
-      # 그룹 뽑아내는 작업 (환경변수 TESTER_GROUP에 저장)
+      # 그룹 뽑아내는 작업
       - name: GetTesterGroup
+        id: get_tester_group
         run: |
-          TESTER_GROUP=$(echo "${{ steps.get_whole_issue.outputs.whole_issue }}" | sed -n 's/테스터:[[:space:]]*\(.*\)[[:space:]]*$/\1/p')
-          echo "TESTER_GROUP=TESTER_GROUP" >> $GITHUB_ENV
+          TESTER_GROUP=$(echo "${{ steps.get_whole_issue.outputs.whole_issue }}" | sed -n 's/^- *테스터:[[:space:]]*\(.*\)[[:space:]]*$/\1/p')
+          echo "::set-output name=tester_group::$TESTER_GROUP"
         # 설명 sed -> 유닉스 계통의 텍스트 파일 조작도구(텍스트 변환용) 휴먼에러 제거를 위해 앞뒤 테스터 뒤 텍스트 앞뒤 공백 제거하는 코드 추가
 
-      # 출시노트 뽑아내는 작업 (환경변수 에 저장)
+      # 출시노트 뽑아내는 작업
       - name: GetReleaseNote
+        id: get_release_note
         run: |
-          RELEASE_NOTE=
+          RELEASE_NOTE=$(echo "${{ steps.get_whole_issue.outputs.whole_issue }}" | sed -n '/- 출시노트:/,/^+++++$/ { /^+++++$/d; p }')
+          echo "::set-output name=release_note::$RELEASE_NOTE"
+        # 설명 출시노트 이슈 템플릿의 +++++ 사이 텍스트를 추출하여 반환
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
