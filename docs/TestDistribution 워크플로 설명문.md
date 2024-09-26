@@ -59,7 +59,67 @@ sed는 텍스트 스트림을 편집 및 변환하는 스트림 편집기 입니
 
 
 
+## Job / BuildAAB
+
+### step / checkout code
+기본적으로 checkout이란 깃에서 제공하는 환경에 저장소에 있는 파일들을 내려받는 개념이라고 보면됩니다.
+이때 with을 통해서 설정을 부여할 수 있습니다.
+
+#### persist-credentials
+
+actions/checkout이 실행될 때 사용하는 GitHub 액세스 토큰을 체크아웃 이후에도 git 자격 증명으로 유지할지 여부를 결정하는 옵션입니다.
+즉 해당 설정을 false로 하면 이후 step에서 git 관련 명령어를 수행할때 추가 인정정보가 필요합니다.
+
+보안상의 이유로 설정하는 옵션인데 check out이후 step에서 git관련 명령어를 사용하지 않는 경우 false로 설정하는것이 좋습니다.
+
+기본 값은 true입니다.
+
+### step / gradle cache
+
+캐싱은 안드로이드진영에서 많이쓰이는 Gradle 캐시를 기본적으로 채용했습니다. 
+
+만약 필요하다면 고도화가 필요할것 같습니다.
+
+[참고 블로그](https://kotlinworld.com/399) -> 해당 블로그에서 설명을 참고하시면 됩니다.
 
 
 
+### step / set up JDK 8
+
+사용할 자바를 설정하는것으로 안드로이드 에서 사용하는 jdk를 세팅해주면 됩니다.
+
+gradle의 경우 캐싱할거니 Gradle 빌드 캐시 활성화 하는 설정인  ```cache: gradle``` 를 설정해주었습니다.
+
+
+
+### step / grant execute permission for gradlew
+
+gradlew 파일에 실행 권한을 부여하는 설정을 해주는 스텝입니다.
+
+Git 저장소에 커밋된 파일의 권한은 플렛폼에 따라 다르게 동작할 수 있다고 합니다.(맥, 윈도우, 리눅스 -> 가끔 sudo입력해야 되는 상황 같은거)
+
+그래서 실행 권한을 부여하기 위해 거쳐야하는 step 입니다.
+
+
+
+### step / Build Android AAB
+
+AAB 파일 빌드하는 step 입니다.
+
+기본적으로 구글링 해보 ```run: ./gradlew assembleDebug --stacktrace```을 많이 사용하는데 해당 명령어의 경우 apk를 뽑는 명령어로 현재와 같은 형태를 띄도록 변경하였습니다.
+
+추후 flavor관련 부분 테스트 및 변경이 필요합니다. 
+
+
+
+### step / Upload AAB as artifact
+
+AAB 파일을 다음 Job로 전달하기위한 step 입니다.
+
+ Job간 정보 전달은 output, artifact가 있습니다.
+
+- output: 데이터 전달이지만 텍스트 값만 전달가능(빌드파일 등은 불가)
+- artifact: 워크플로우가 실행되는 동안 생성된 파일이나 디렉토리를 말합니다. 파일등을 전달할때 유용하며 워크플로우간 공유, 내용물 github을 통해 90일간 다운로드도 가능합니다.
+
+aab 생성경로를 path로 넣어주어 해당 파일을 aabFile이라는 이름으로 저장합니다.
 
