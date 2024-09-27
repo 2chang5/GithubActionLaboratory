@@ -123,3 +123,31 @@ AAB 파일을 다음 Job로 전달하기위한 step 입니다.
 
 aab 생성경로를 path로 넣어주어 해당 파일을 aabFile이라는 이름으로 저장합니다.
 
+
+
+## Job / DistrubutionByFirebaseAppTester
+
+기본 조건:
+
+하기 두가지 job에 종속적
+
+- ReleaseNoteInputByIssue
+- BuildAAB
+
+필터: BuildAAB가 성공시에만 동작 
+
+
+
+### step / Download AAB artifact
+
+aab를 다운받는 과정입니다.
+
+
+
+### step /  Upload to Firebase App Distribution
+
+```
+wzieba/Firebase-Distribution-Github-Action@v1
+```
+
+해당 명세에 맞춰서 파이어 베이스 배포를 위한 정보를 넣어주었습니다.
