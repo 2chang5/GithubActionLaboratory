@@ -40,7 +40,7 @@ jobs:
       - name: GetReleaseNote
         id: get_release_note
         run: |
-          RELEASE_NOTE=$(echo "${{ steps.get_whole_issue.outputs.whole_issue }}" | sed -n '/^- 출시노트:/,/^+++++$/ {/^+++++$/d; /^- 출시노트:/d; p}')
+          RELEASE_NOTE=$(echo "${{ steps.get_whole_issue.outputs.whole_issue }}" | awk '/^- 출시노트:/ {flag=1; next} /+++++/ {flag=0} flag {print}' )
           echo "::set-output name=release_note::$RELEASE_NOTE"
           printf "RELEASE_NOTE 내용:\n%s\n" "$RELEASE_NOTE"
         # 설명 출시노트 이슈 템플릿의 +++++ 사이 텍스트를 추출하여 반환
