@@ -23,7 +23,7 @@ jobs:
         id: get_whole_issue
         run: |
           WHOLE_ISSUE=$(jq -r '.issue.body' < $GITHUB_EVENT_PATH)
-          echo "::set-output name=whole_issue::$WHOLE_ISSUE"
+          echo "$WHOLE_ISSUE" > whole_issue.txt
           printf "WHOLE_ISSUE 내용:\n%s\n" "$WHOLE_ISSUE"
         # 설명: jq -> 제이슨을 다루는 명령어도구 제이슨 스트림을 다룰수 있음 $GITHUB_EVENT_PATH 에 제이슨 형태로 해당 이벤트의 정보가 담겨서 넘어옴 그래서 추출해서 raw data 형태로(-r 옵션)을 통해 본문 추출)
 
@@ -31,7 +31,8 @@ jobs:
       - name: GetTesterGroup
         id: get_tester_group
         run: |
-          TESTER_GROUP=$(echo "${{ steps.get_whole_issue.outputs.whole_issue }}" | sed -n 's/^- *테스터:[[:space:]]*\(.*\)[[:space:]]*$/\1/p')
+          WHOLE_ISSUE=$(cat whole_issue.txt)
+          TESTER_GROUP=$(echo "$WHOLE_ISSUE" | sed -n 's/^- *테스터:[[:space:]]*\(.*\)[[:space:]]*$/\1/p')
           echo "::set-output name=tester_group::$TESTER_GROUP"
           echo "TESTER_GROUP 내용: $TESTER_GROUP"
         # 설명 sed -> 유닉스 계통의 텍스트 파일 조작도구(텍스트 변환용) 휴먼에러 제거를 위해 앞뒤 테스터 뒤 텍스트 앞뒤 공백 제거하는 코드 추가
@@ -40,7 +41,8 @@ jobs:
       - name: GetReleaseNote
         id: get_release_note
         run: |
-          RELEASE_NOTE=$(echo "${{ steps.get_whole_issue.outputs.whole_issue }}" | sed -n '/- 출시노트:/,/^+++++$/ { /^+++++$/d; p }')
+          WHOLE_ISSUE=$(cat whole_issue.txt)
+          RELEASE_NOTE=$(echo "$WHOLE_ISSUE" | awk '/^- 출시노트:/ {flag=1; next} flag && /^+++++/ {count++; next} count==1 {print} count==2 {exit}')
           echo "::set-output name=release_note::$RELEASE_NOTE"
           printf "RELEASE_NOTE 내용:\n%s\n" "$RELEASE_NOTE"
         # 설명 출시노트 이슈 템플릿의 +++++ 사이 텍스트를 추출하여 반환
