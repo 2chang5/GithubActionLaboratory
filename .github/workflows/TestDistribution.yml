@@ -40,6 +40,8 @@ jobs:
       - name: GetReleaseNote
         id: get_release_note
         run: |
+          printf "WHOLE_ISSUE 내용:\n%s\n" "${{ steps.get_whole_issue.outputs.whole_issue }}"
+          printf "###########################"
           echo "${{ steps.get_whole_issue.outputs.whole_issue }}"
           RELEASE_NOTE=$(echo "${{ steps.get_whole_issue.outputs.whole_issue }}" | awk '/^+++++/ {flag=!flag; next} flag')
           echo "::set-output name=release_note::$RELEASE_NOTE"
