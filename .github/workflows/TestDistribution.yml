@@ -43,7 +43,7 @@ jobs:
         run: |
           WHOLE_ISSUE=$(cat whole_issue.txt)
           printf "이슈 잘옴? 내용:\n%s\n" "$WHOLE_ISSUE"
-          RELEASE_NOTE=$(echo "$WHOLE_ISSUE" | awk '/^- 출시노트:/ {flag=1; next} flag && /^+++++/ {flag=!flag; next} flag')
+          RELEASE_NOTE=$(echo "$WHOLE_ISSUE" | awk '/^- 출시노트:/ {flag=1; next} flag && /^+++++/ {count++; next} count==1 {print} count==2 {exit}')
           echo "::set-output name=release_note::$RELEASE_NOTE"
           printf "RELEASE_NOTE 내용:\n%s\n" "$RELEASE_NOTE"
         # 설명 출시노트 이슈 템플릿의 +++++ 사이 텍스트를 추출하여 반환
