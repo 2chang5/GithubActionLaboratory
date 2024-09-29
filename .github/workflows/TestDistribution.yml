@@ -42,9 +42,6 @@ jobs:
         id: get_release_note
         run: |
           WHOLE_ISSUE=$(cat whole_issue.txt)
-          printf "WHOLE_ISSUE 내용:\n%s\n" "$"
-          printf "###########################"
-          echo "$WHOLE_ISSUE"
           RELEASE_NOTE=$(echo "$WHOLE_ISSUE" | awk '/^+++++/ {flag=!flag; next} flag')
           echo "::set-output name=release_note::$RELEASE_NOTE"
           printf "RELEASE_NOTE 내용:\n%s\n" "$RELEASE_NOTE"
