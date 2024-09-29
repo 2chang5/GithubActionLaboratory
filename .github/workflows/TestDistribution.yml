@@ -42,7 +42,7 @@ jobs:
         id: get_release_note
         run: |
           WHOLE_ISSUE=$(cat whole_issue.txt)
-          RELEASE_NOTE=$(echo "$WHOLE_ISSUE" | awk '/^+++++/ {flag=!flag; next} flag')
+          RELEASE_NOTE=$(echo "$WHOLE_ISSUE" | awk '/^- 출시노트:/ {flag=1; next} flag && /^+++++/ {flag=!flag; next} flag')
           echo "::set-output name=release_note::$RELEASE_NOTE"
           printf "RELEASE_NOTE 내용:\n%s\n" "$RELEASE_NOTE"
         # 설명 출시노트 이슈 템플릿의 +++++ 사이 텍스트를 추출하여 반환
