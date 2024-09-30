@@ -1,15 +1,15 @@
-name: CheckPayload
-
-on:
-  issues:
-    types:
-      - labeled
-    labels:
-      - '테스트_배포'
-      
-jobs:
-  debug:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Show event payload
-        run: cat $GITHUB_EVENT_PATH
+#name: CheckPayload
+#
+#on:
+#  issues:
+#    types:
+#      - labeled
+#    labels:
+#      - '테스트_배포'
+#
+#jobs:
+#  debug:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Show event payload
+#        run: cat $GITHUB_EVENT_PATH
