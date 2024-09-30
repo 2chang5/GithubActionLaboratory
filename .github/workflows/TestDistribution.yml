@@ -112,13 +112,3 @@ jobs:
           groups: ${{ needs.ReleaseNoteInputByIssue.outputs.tester_group }}
           file: app/build/outputs/bundle/debug/app-debug.aab
           releaseNotes: ${{ needs.ReleaseNoteInputByIssue.outputs.release_note }}
-
-
-
-
-
-
-
-
-
-
