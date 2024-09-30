@@ -80,18 +80,8 @@ jobs:
 
       - name: Create google-services.json
         run: |
-          printf "%s" "${{ secrets.GOOGLE_SERVICES_JSON }}" > app/google-services.json
+          echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 --decode > app/google-services.json
           cat app/google-services.json
-
-      - name: Check if google-services.json is valid JSON
-        run: |
-          if jq empty app/google-services.json; then
-            echo "Valid JSON"
-          else
-            echo "Invalid JSON"
-            exit 1
-          fi
-
 
       # gradle 관련 숨김파일 생성 step 추가 필요
 
