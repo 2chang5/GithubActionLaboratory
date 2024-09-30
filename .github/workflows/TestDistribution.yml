@@ -82,6 +82,9 @@ jobs:
         run: |
           echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 --decode > app/google-services.json
 
+      - name: Verify google-services.json content
+        run: cat app/google-services.json
+
       # gradle 관련 숨김파일 생성 step 추가 필요
 
       # 회사 코드에 적용시에는 수정 필요 flovor 관련
