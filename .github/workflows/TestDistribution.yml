@@ -48,8 +48,8 @@ jobs:
         # 설명 출시노트 이슈 템플릿의 +++++ 사이 텍스트를 추출하여 반환
 
 
-  # 두번째 작업 안드로이드 AAB 빌드하는 작업
-  BuildAAB:
+  # 두번째 작업 안드로이드 APK 빌드하는 작업
+  BuildAPK:
     runs-on: ubuntu-latest
     needs: ReleaseNoteInputByIssue
     steps:
@@ -85,28 +85,28 @@ jobs:
       # gradle 관련 숨김파일 생성 step 추가 필요
 
       # 회사 코드에 적용시에는 수정 필요 flovor 관련
-      - name: Build Android AAB
-        run: ./gradlew bundleDebug
+      - name: Build Android APK
+        run: ./gradlew assembleDebug --stacktrace
 
-      - name: Upload AAB as artifact
+      - name: Upload APK as artifact
         uses: actions/upload-artifact@v3
         with:
-          name: aabFile
-          path: app/build/outputs/bundle/debug/app-debug.aab
+          name: apkFile
+          path: app/build/outputs/apk/debug/app-debug.apk
 
   # 세번째 작업 배포 및 슬랙 알림 메시지
   DistrubutionByFirebaseAppTester:
     runs-on: ubuntu-latest
     needs:
       - ReleaseNoteInputByIssue
-      - BuildAAB
-    if: ${{ needs.BuildAAB.result == 'success' }}
+      - BuildAPK
+    if: ${{ needs.BuildAPK.result == 'success' }}
     steps:
-      - name: Download AAB artifact
+      - name: Download APK artifact
         uses: actions/download-artifact@v3
         with:
-          name: aabFile
-          path: app/build/outputs/bundle/debug
+          name: apkFile
+          path: app/build/outputs/apk/debug
 
       - name: Upload to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1.7.0
@@ -114,5 +114,5 @@ jobs:
           appId: ${{ secrets.FIREBASE_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.CREDENTIAL_FILE_CONTENT }}
           groups: ${{ needs.ReleaseNoteInputByIssue.outputs.tester_group }}
-          file: app/build/outputs/bundle/debug/app-debug.aab
+          file: app/build/outputs/apk/debug/app-debug.apk
           releaseNotes: ${{ needs.ReleaseNoteInputByIssue.outputs.release_note }}
