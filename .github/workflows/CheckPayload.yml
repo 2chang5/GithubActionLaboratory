@@ -13,3 +13,5 @@ jobs:
     steps:
       - name: Show event payload
         run: cat $GITHUB_EVENT_PATH
+
+## 제이슨 형식으로 정리해서 볼 수 있음

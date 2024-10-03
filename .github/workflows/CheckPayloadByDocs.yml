@@ -1,0 +1,19 @@
+name: CheckPayloadByDocs
+
+on:
+  issues:
+    types:
+      - labeled
+    labels:
+      - '동작 안시킬꺼임'
+
+jobs:
+  print_context:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          EVENT_CONTEXT: ${{ toJSON(github.event) }}
+        run: |
+          echo $EVENT_CONTEXT
+
+## 제이슨 형식으로 정리 안되어서 나옴 -> 공식문서에 나오는 방식 그대로
