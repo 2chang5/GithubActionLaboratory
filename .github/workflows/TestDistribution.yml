@@ -6,14 +6,20 @@ name: TestDistribution
 on:
   issues:
     types:
-      - labeled
-    labels:
-      - '테스트_배포'
+      - opened
 
 jobs:
+  CheckTrigger:
+    if: contains(github.event.label.name, '테스트_배포')
+    runs-on: ubuntu-latest
+    steps:
+      - name: printCurrentLabel
+        run: printf "${{ github.event.label.name }}"
+
   # 첫번째 작업 이슈내 입력값 테스터, 출시노트 긁어오는 작업
   ReleaseNoteInputByIssue:
     runs-on: ubuntu-latest
+    needs: CheckTrigger
     outputs:
       tester_group: ${{ steps.get_tester_group.outputs.tester_group }}
     steps:

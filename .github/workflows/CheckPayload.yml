@@ -3,12 +3,11 @@ name: CheckPayload
 on:
   issues:
     types:
-      - labeled
-    labels:
-      - '동작 안시킬꺼임'
+      - opened
 
 jobs:
   debug:
+    if: contains(github.event.label.name, '디버깅용_라벨')
     runs-on: ubuntu-latest
     steps:
       - name: Show event payload
