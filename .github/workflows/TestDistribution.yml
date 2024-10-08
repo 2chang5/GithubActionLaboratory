@@ -21,7 +21,7 @@ jobs:
       - name: GetWholeIssueString
         id: get_whole_issue
         run: |
-          WHOLE_ISSUE=$(jq -r '.issue.body' < $GITHUB_EVENT_PATH)
+          WHOLE_ISSUE="${{ github.event.issue.body }}"
           echo "$WHOLE_ISSUE" > whole_issue.txt
           printf "WHOLE_ISSUE 내용:\n%s\n" "$WHOLE_ISSUE"
         # 설명: jq -> 제이슨을 다루는 명령어도구 제이슨 스트림을 다룰수 있음 $GITHUB_EVENT_PATH 에 제이슨 형태로 해당 이벤트의 정보가 담겨서 넘어옴 그래서 추출해서 raw data 형태로(-r 옵션)을 통해 본문 추출)
