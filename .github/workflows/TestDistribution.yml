@@ -20,7 +20,7 @@ jobs:
     if: contains(join(github.event.issue.labels.*.name, ','), '테스트_배포')
     runs-on: ubuntu-latest
     steps:
-      - name: printCurrentLabel
+      - name: print current label
         run: printf "${{ join(github.event.issue.labels.*.name, ',') }}"
 
   # 첫번째 작업 이슈내 입력값 테스터, 출시노트 긁어오는 작업
@@ -32,7 +32,7 @@ jobs:
       branch_name: ${{ steps.get_branch_name.outputs.branch_name }}
     steps:
       # 이슈의 본문자체를 끌어오는 작업
-      - name: GetWholeIssueString
+      - name: get whole issue string
         id: get_whole_issue
         run: |
           WHOLE_ISSUE="${{ github.event.issue.body }}"
@@ -40,7 +40,7 @@ jobs:
           printf "WHOLE_ISSUE 내용:\n%s\n" "$WHOLE_ISSUE"
 
       # 배포할 브랜치를 뽑아내는 작업
-      - name: GetBranchName
+      - name: get branch name
         id: get_branch_name
         run: |
           WHOLE_ISSUE=$(cat whole_issue.txt)
@@ -49,7 +49,7 @@ jobs:
           echo "BRANCH_NAME 내용: $BRANCH_NAME"
 
       # 그룹 뽑아내는 작업
-      - name: GetTesterGroup
+      - name: get tester group
         id: get_tester_group
         run: |
           WHOLE_ISSUE=$(cat whole_issue.txt)
@@ -59,7 +59,7 @@ jobs:
         # 설명 sed -> 유닉스 계통의 텍스트 파일 조작도구(텍스트 변환용) 휴먼에러 제거를 위해 앞뒤 테스터 뒤 텍스트 앞뒤 공백 제거하는 코드 추가
 
       # 출시노트 뽑아내는 작업
-      - name: GetReleaseNote
+      - name: get release note
         id: get_release_note
         run: |
           WHOLE_ISSUE=$(cat whole_issue.txt)
@@ -68,10 +68,10 @@ jobs:
           printf "RELEASE_NOTE 내용:\n%s\n" "$RELEASE_NOTE"
         # 설명 출시노트 이슈 템플릿의 +++++ 사이 텍스트를 추출하여 반환
 
-      - name: Upload Release Note as Artifact
+      - name: upload release note as artifact
         uses: actions/upload-artifact@v3
         with:
-          name: releaseNote
+          name: release_note
           path: release_note.txt
 
   # 두번째 작업 안드로이드 APK 빌드하는 작업
@@ -112,13 +112,13 @@ jobs:
       # gradle 관련 숨김파일 생성 step 추가 필요
 
       # 회사 코드에 적용시에는 수정 필요 flovor 관련
-      - name: Build Android APK
+      - name: build android APK
         run: ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK as artifact
         uses: actions/upload-artifact@v3
         with:
-          name: apkFile
+          name: apk_file
           path: app/build/outputs/apk/debug/app-debug.apk
 
   # 세번째 작업 배포 및 슬랙 알림 메시지
@@ -129,18 +129,18 @@ jobs:
       - BuildAPK
     if: ${{ needs.BuildAPK.result == 'success' }}
     steps:
-      - name: Download APK artifact
+      - name: download APK artifact
         uses: actions/download-artifact@v3
         with:
-          name: apkFile
+          name: apk_file
           path: app/build/outputs/apk/debug
 
-      - name: Download Release Note Artifact
+      - name: download release note artifact
         uses: actions/download-artifact@v3
         with:
-          name: releaseNote
+          name: release_note
 
-      - name: Upload to Firebase App Distribution
+      - name: upload to firebase app distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1.7.0
         with:
           appId: ${{ secrets.FIREBASE_APP_ID }}
