@@ -32,6 +32,7 @@ render.experimental.xml
 
 # Google Services (e.g. APIs or Firebase)
 google-services.json
+githubactionlaboratory-credential-file-content.json
 
 # Android Profiling
 *.hprof
@@ -56,6 +57,8 @@ gen-external-apklibs
 
 # Package Files #
 *.jar
+!gradle/wrapper/gradle-wrapper.jar
+
 *.war
 *.nar
 *.ear
