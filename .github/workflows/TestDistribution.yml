@@ -9,12 +9,19 @@ on:
       - opened
 
 jobs:
+#  이벤트 디버그용 필요시 주석 해제후 사용
+#  debug:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Show event payload
+#        run: cat $GITHUB_EVENT_PATH
+
   CheckTrigger:
-    if: contains(github.event.label.name, '테스트_배포')
+    if: contains(join(github.event.issue.labels.*.name, ','), '테스트_배포')
     runs-on: ubuntu-latest
     steps:
       - name: printCurrentLabel
-        run: printf "${{ github.event.label.name }}"
+        run: printf "${{ join(github.event.issue.labels.*.name, ',') }}"
 
   # 첫번째 작업 이슈내 입력값 테스터, 출시노트 긁어오는 작업
   ReleaseNoteInputByIssue:
@@ -30,7 +37,6 @@ jobs:
           WHOLE_ISSUE="${{ github.event.issue.body }}"
           echo "$WHOLE_ISSUE" > whole_issue.txt
           printf "WHOLE_ISSUE 내용:\n%s\n" "$WHOLE_ISSUE"
-        # 설명: jq -> 제이슨을 다루는 명령어도구 제이슨 스트림을 다룰수 있음 $GITHUB_EVENT_PATH 에 제이슨 형태로 해당 이벤트의 정보가 담겨서 넘어옴 그래서 추출해서 raw data 형태로(-r 옵션)을 통해 본문 추출)
 
       # 그룹 뽑아내는 작업
       - name: GetTesterGroup
