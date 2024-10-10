@@ -29,6 +29,7 @@ jobs:
     needs: CheckTrigger
     outputs:
       tester_group: ${{ steps.get_tester_group.outputs.tester_group }}
+      branch_name: ${{ steps.get_branch_name.outputs.branch_name }}
     steps:
       # 이슈의 본문자체를 끌어오는 작업
       - name: GetWholeIssueString
@@ -37,6 +38,15 @@ jobs:
           WHOLE_ISSUE="${{ github.event.issue.body }}"
           echo "$WHOLE_ISSUE" > whole_issue.txt
           printf "WHOLE_ISSUE 내용:\n%s\n" "$WHOLE_ISSUE"
+
+      # 배포할 브랜치를 뽑아내는 작업
+      - name: GetBranchName
+        id: get_branch_name
+        run: |
+          WHOLE_ISSUE=$(cat whole_issue.txt)
+          BRANCH_NAME=$(echo "$WHOLE_ISSUE" | sed -n 's/^- *브랜치:[[:space:]]*\(.*\)[[:space:]]*$/\1/p')
+          echo "::set-output name=branch_name::$BRANCH_NAME"
+          echo "BRANCH_NAME 내용: $BRANCH_NAME"
 
       # 그룹 뽑아내는 작업
       - name: GetTesterGroup
@@ -72,6 +82,7 @@ jobs:
       - name: checkout code
         uses: actions/checkout@v4
         with:
+          ref: ${{ needs.ReleaseNoteInputByIssue.outputs.branch_name }}
           persist-credentials: false
 
       - name: gradle cache
