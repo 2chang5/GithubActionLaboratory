@@ -30,6 +30,8 @@ jobs:
     outputs:
       tester_group: ${{ steps.get_tester_group.outputs.tester_group }}
       branch_name: ${{ steps.get_branch_name.outputs.branch_name }}
+      noti_thread: ${{ steps.get_noti_thread.outputs.noti_thread }}
+
     steps:
       # 이슈의 본문자체를 끌어오는 작업
       - name: get whole issue string
@@ -38,6 +40,15 @@ jobs:
           WHOLE_ISSUE="${{ github.event.issue.body }}"
           echo "$WHOLE_ISSUE" > whole_issue.txt
           printf "WHOLE_ISSUE 내용:\n%s\n" "$WHOLE_ISSUE"
+
+      # 노티할 슬랙 스레드를 뽑아내는 작업
+      - name: get slack thread link
+        id: get_noti_thread
+        run: |
+          WHOLE_ISSUE=$(cat whole_issue.txt)
+          NOTI_THREAD=$(echo "$WHOLE_ISSUE" | sed -n 's/^- *노티 스레드 링크:[[:space:]]*\(.*\)[[:space:]]*$/\1/p')
+          echo "::set-output name=noti_thread::$NOTI_THREAD"
+          echo "NOTI_THREAD 내용: $NOTI_THREAD"
 
       # 배포할 브랜치를 뽑아내는 작업
       - name: get branch name
@@ -122,7 +133,7 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
 
   # 세번째 작업 배포 및 슬랙 알림 메시지
-  DistrubutionByFirebaseAppTester:
+  DistributionByFirebaseAppTester:
     runs-on: ubuntu-latest
     needs:
       - ReleaseNoteInputByIssue
@@ -150,3 +161,64 @@ jobs:
           releaseNotesFile: release_note.txt
 
 
+  # 네번째 작업 슬랙에 성공 메시지 보내기
+  SlackNotify:
+    runs-on: ubuntu-latest
+    needs:
+      - DistributionByFirebaseAppTester
+      - ReleaseNoteInputByIssue
+    if: always()
+    steps:
+      - name: download release note artifact
+        if: ${{ needs.DistributionByFirebaseAppTester.result == 'success' }}
+        uses: actions/download-artifact@v3
+        with:
+          name: release_note
+
+      - name: send_success_result_to_webhook
+        if: ${{ needs.DistributionByFirebaseAppTester.result == 'success' }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{
+           "text": "테스트 앱 배포에 성공하였습니다. :tada:",
+           "username": "GitHub Actions",
+           "icon_emoji": ":rocket:"
+          }' ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: send_success_result_to_selected_channel
+        if: ${{ needs.DistributionByFirebaseAppTester.result == 'success' }}
+        run: |
+          if [ "${{ needs.ReleaseNoteInputByIssue.outputs.noti_thread }}" != "없음" ]; then
+            NOTI_THREAD_LINK="${{ needs.ReleaseNoteInputByIssue.outputs.noti_thread }}"
+            echo "스레드 링크 추출 결과: $NOTI_THREAD_LINK"
+          
+            CHANNEL_ID=$(echo "$NOTI_THREAD_LINK" | awk -F'/archives/' '{print $2}' | awk -F'/' '{print $1}')
+            echo "채널 ID 추출 결과: $CHANNEL_ID"
+          
+            TIMESTAMP_RAW=$(echo "$NOTI_THREAD_LINK" | awk -F'/archives/' '{print $2}' | awk -F'/' '{print $2}' | sed 's/^p//')
+            THREAD_TS="${TIMESTAMP_RAW:0:10}.${TIMESTAMP_RAW:10}"
+            echo "타임스탬프 추출 결과: $THREAD_TS"
+          
+            RELEASE_NOTE=$(cat release_note.txt)
+
+            RELEASE_NUMBER=$(echo "$RELEASE_NOTE" | sed -n 's/^#\([0-9]*\).*/\1/p')
+            echo "RELEASE_NUMBER: $RELEASE_NUMBER"
+          
+            RELEASE_NOTE_WITH_OUT_RELEASE_NUMBER=$(echo "$RELEASE_NOTE" | sed '1d' | jq -Rs .| sed 's/^"//;s/"$//' | sed 's/\\r\\n/\\n/g')
+            echo "RELEASE_NOTE_WITH_OUT_RELEASE_NUMBER:$RELEASE_NOTE_WITH_OUT_RELEASE_NUMBER"
+          
+            curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.SLACK_API_TOKEN }}" \
+            -H 'Content-type: application/json' \
+            --data '{
+            "channel": "'"$CHANNEL_ID"'",   
+            "text": "<@U07SR9FH8RW>\n앱 테스터에 #'"$RELEASE_NUMBER"' 으로 테스트 앱 배포하였습니다.\n확인 부탁드립니다. :pray:\n\n# 변경사항\n'"$RELEASE_NOTE_WITH_OUT_RELEASE_NUMBER"'(cc.)",
+            "thread_ts": "'"$THREAD_TS"'",
+            "username": "자동화 봇",
+            "icon_emoji": ":rocket:"
+            }' \
+            https://slack.com/api/chat.postMessage
+          fi
+
+#      - name: faliure_result
+#        if: ${{ needs.DistrubutionByFirebaseAppTester.result == 'failure' }}
+#        run: |
