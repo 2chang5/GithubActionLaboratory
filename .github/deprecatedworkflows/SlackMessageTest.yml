@@ -1,0 +1,39 @@
+
+
+name: SlackMessageTest
+
+on:
+  issues:
+    types:
+      - opened
+
+jobs:
+  SlackWebHookNotify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: web_hook
+        run: |
+          SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL }}
+          
+          curl -X POST -H 'Content-type: application/json' --data '{
+           "text": "테스트 앱 배포에 성공하였습니다. :tada:",
+           "username": "GitHub Actions",
+           "icon_emoji": ":rocket:"
+          }' $SLACK_WEBHOOK_URL
+
+  SlackPostMessageNotify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: post_message
+        run: |
+          curl -X POST \
+          -H "Authorization: Bearer ${{ secrets.SLACK_API_TOKEN }}" \
+          -H 'Content-type: application/json' \
+          --data '{
+          "channel": "C07RENQDMQB",  
+          "text": "This is a reply to the thread",
+          "thread_ts": "1728626151.652449"  
+          }' \
+          https://slack.com/api/chat.postMessage
+          
+
