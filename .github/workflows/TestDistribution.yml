@@ -219,6 +219,11 @@ jobs:
             https://slack.com/api/chat.postMessage
           fi
 
-#      - name: faliure_result
-#        if: ${{ needs.DistrubutionByFirebaseAppTester.result == 'failure' }}
-#        run: |
+      - name: send_failure_result_to_webhook
+        if: ${{ needs.DistributionByFirebaseAppTester.result == 'failure' || needs.DistributionByFirebaseAppTester.result == 'skipped'}}
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{
+           "text": ":rotating_light: :rotating_light: :rotating_light: 테스트 앱 배포에 실패하였습니다. :cry: :rotating_light: :rotating_light: :rotating_light:",
+           "username": "GitHub Actions",
+           "icon_emoji": ":rocket:"
+          }' ${{ secrets.SLACK_WEBHOOK_URL }}
