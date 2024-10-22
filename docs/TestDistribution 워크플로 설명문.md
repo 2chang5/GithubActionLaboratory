@@ -36,6 +36,7 @@ output로 정의한 내용:
 
 - tester_ group / get tester group 스텝에서 값 주입 
 - branch_name / get branch name 스텝에서 값 주입
+- noti_thread / get slack thread link 스텝에서 값 주입
 
 output 사용 이유: 한줄짜리 데이터는 txt 파일로 전달할 경우 원치않는 공백 혹은 줄바꿈이 들어가 추가 처리가 필요하여 불필요한 작업이 늘어납니다.
 
@@ -47,7 +48,7 @@ artifact로 정의한 내용:
 
 - release_note / upload release note as artifact 스텝에서 텍스트 파일 주입
 
-artifact 사용 이유: 줄바꿈이 있는 데이터의 경우 output으로 처리가 불가능합니다. -> 한줄 짜리만 처리가능 이에 txt파일 형태로 전달할 수 있도록 artifact를 이용하였습니다.
+artifact 사용 이유: 줄바꿈이 있는 데이터의 경우 output으로 처리가 불가능합니다. -> txt파일 형태로 전달할 수 있도록 artifact를 이용하였습니다.
 
 
 
@@ -82,6 +83,20 @@ WHOLE_ISSUE="${{ github.event.issue.body }}"
 .... 훨씬 엄청 많은 값 나옴 필요하면 액션 돌려보자.
 ```
 
+### step / get slack thread link
+
+선택사항인 추가 노티(QA팀 및 관계자들 노티용) 타겟 스레드를 본문 내용으로부터 추출하는 step 입니다.
+
+```yml
+NOTI_THREAD=$(echo "$WHOLE_ISSUE" | sed -n 's/^- *노티 스레드 링크:[[:space:]]*\(.*\)[[:space:]]*$/\1/p')
+```
+
+sed는 유닉스 계통의 텍스트 파일 조작 도구 입니다.
+
+스레드 링크를 입력시 휴먼에러를 방지하기 위해 입력한 링크 앞뒤에 공백을 제거하는 코드를 추가하였습니다.
+
+줄바꿈이 필요없어 출력을 output으로 설정하였습니다.
+
 
 
 ### step / get branch name 
@@ -94,7 +109,7 @@ BRANCH_NAME=$(echo "$WHOLE_ISSUE" | sed -n 's/^- *브랜치:[[:space:]]*\(.*\)[[
 
 sed는 유닉스 계통의 텍스트 파일 조작 도구 입니다.
 
-브랜치 명을 입력시 휴먼에러를 방지라기 위해 입력한 브랜치 앞뒤에 공백을 제거하는 코드를 추가하였습니다.
+브랜치 명을 입력시 휴먼에러를 방지하기 위해 입력한 브랜치 앞뒤에 공백을 제거하는 코드를 추가하였습니다.
 
 줄바꿈이 필요없어 출력을 output으로 설정하였습니다.
 
@@ -146,6 +161,13 @@ artifact로 업로드 하여 추후 일정 기간 동안 github action을 통하
 기본적으로 checkout이란 깃에서 제공하는 환경에 저장소에 있는 파일들을 내려받는 개념이라고 보면됩니다.
 이때 with을 통해서 설정을 부여할 수 있습니다.
 
+#### ref
+
+어떤 브랜치의 코드를 내려받을지 지정해주는 옵션입니다.
+
+ReleaseNoteInputByIssue/get branch name 스텝에서 추출한 브랜치 명을 이용하여 브랜치를 설정합니다.
+
+
 #### persist-credentials
 
 actions/checkout이 실행될 때 사용하는 GitHub 액세스 토큰을 체크아웃 이후에도 git 자격 증명으로 유지할지 여부를 결정하는 옵션입니다.
@@ -155,12 +177,7 @@ actions/checkout이 실행될 때 사용하는 GitHub 액세스 토큰을 체크
 
 기본 값은 true입니다.
 
-#### ref
-
-어떤 브랜치의 코드를 내려받을지 지정해주는 옵션입니다.
-
-ReleaseNoteInputByIssue/get branch name 스텝에서 추출한 브랜치 명을 이용하여 브랜치를 설정합니다.
-
+해당 step 이후 워크 플로우 내 추가적인 git 관련 명령이 없어 false를 설정하였습니다.
 
 
 ### step / gradle cache
@@ -197,6 +214,7 @@ Git 저장소에 커밋된 파일의 권한은 플렛폼에 따라 다르게 동
 
 해당 값은 base64로 인코딩되어 secrects에 저장 되어있습니다.
 
+(줄바꿈 관련 오류가 지속적으로 일어나 우회하기 위해 현재 base64로 인코딩하여 secrets에 저장 후 디코딩하여 파일을 생성하는 형태를 띄고있습니다. 추후 확인을 더 거쳐 수정가능하다면 수정할 예정입니다.)
 
 
 ### step / Build Android AAB(테스트 환경에서는 APK)
@@ -224,7 +242,7 @@ artifact를 이용하여 파일을 전달하도록 하였습니다.
 
 aab 생성경로를 path로 넣어주어 해당 파일을 apk_file이라는 이름으로 저장합니다.
 
--> name이 해당 파일에대한 구분할수있는 요소로 작용합니다.
+-> name이 해당 파일을 구분할수있는 요소로 작용합니다.
 
 
 
@@ -267,6 +285,98 @@ wzieba/Firebase-Distribution-Github-Action@v1.7.0
 
 개인계정으로 해당 값을 뽑으면 추후 문제가 있을 수 있어 파이어베이스에 접근 가능한 공용계정을 통해 해당 값을 추출하는것이 좋을것이라 판단됩니다.
 
+
+## Job / SlackNotify
+
+기본 조건:
+
+하기 두가지 job 에 종속적
+- DistributionByFirebaseAppTester
+- ReleaseNoteInputByIssue
+
+필터: 항상 동작  
+-> 종속관계에서 부모인 Job이 실패하면 Skip상태가 되어 동작을 안하게 됩니다.  
+실패 했을때 또한 Skip되는것이 아닌 실패메시지를 보내야 하기 때문에 추가된 설정입니다.
+
+## 슬랙 메시지 전달 형식 종류 및 설명
+### webhook
+#### 특징
+- 일반적으로 간단한 메시지를 전달할 때 많이 사용
+- 웹훅 url을 발급받을때 지정한 채널에만 메시지 전송 가능(실험으로 확인)
+- 공식문서상 메시지 포멧을 좀더 확장할 수 있음
+- [공식문서](https://api.slack.com/messaging/webhooks#oauth_response)
+
+#### 사용시 필요항목  
+webhook url을 슬랙으로부터 발급 받아야 합니다.
+
+#### 웹훅 발급방법
+[공식문서](https://api.slack.com/messaging/webhooks#oauth_response)와 [참고블로그](https://velog.io/@king/slack-incoming-webhook)를 확인부탁드리겠습니다.
+
+---
+
+### chat.postMessage
+#### 특징
+- 일반적으로 웹훅으로 해결하지 못하는 메시지를 전달할때 사용
+- 모든채널에 메시지 보내는것이 가능
+- [공식문서](https://api.slack.com/methods/chat.postMessage)
+
+#### 사용시 필요항목  
+슬랙 Oauth 토큰을 슬랙으로부터 발급 받아야 합니다.
+
+#### OAuth 발급방법
+[참고블로그](https://gengminy.tistory.com/52) 참고하셔서 OAuth 값을 발급 부탁드립니다.  
+-> Scope의 필요한 권한은 chat:write입니다.  
+![alt text](<Oauth 이미지.png>)
+
+#### 슬랙 메시지 Url 관련 사항
+메시지를 원하는 채널, 스레드 답글로 남기려면 채널 ID와 TimeStamp를 입력해야합니다.  
+해당 값들은 슬랙 스레드 Url을 통해서 추출 할 수 있습니다.  
+
+일반적인 스레드 url
+```
+https://cashwalkinc.slack.com/archives/C066MJN5W82/p1729565686261999
+```
+- 채널 ID : 특정 채널을 가리키는 값으로 archives 뒤쪽에오는 값으로 예시에서 C066MJN5W82 를 나타내고 있습니다.
+- TimeStamp : 특정 스레드를 가리키는 값으로 예시에서 p1729565686261999 을 나타내고 있습니다.
+
+-> SlackNotify Job의 step에서 해당 값을 추출하여 사용하고있습니다.
+
+
+
+### step / download release note artifact
+
+추출된 릴리즈 노트 파일을 다운받는 과정입니다.
+
+
+### step / send_success_result_to_webhook
+
+성공상황에서 웹훅을 통해 기본 메시지를 보내는 스텝입니다.  
+DistributionByFirebaseAppTester Job이 성공시(success 상태) 보내도록 분기처리가 되어있습니다.  
+슬랙 공식문서에 나와있는 방법으로 웹훅 url을 통해 post 요청을 보내고 있습니다.
+
+
+### step / send_success_result_to_selected_channel
+
+성공상황에서 선택사항인 관계자 노티 메시지를 보내는 스탭입니다.
+
+DistributionByFirebaseAppTester Job이 성공시 보내도록 분기처리가 되어있습니다.  
+
+이슈 입력창의 ```- 노티 스레드 링크: ``` 에 입력값을 기준으로 동작여부를 판별합니다.  
+기본 값인 "없음"으로 입력되면 해당 step을 스킵하며 "없음" 이외의 값이 입력된다면 스레드 url 로 인식하여 해당 url 및 릴리즈 노트에서 필요값을 추출합니다.
+- 필요값
+  - CHANNEL_ID(채널 특정용)
+  - THREAD_TS(타입 스탬프/스레드 특정용)
+  - RELEASE_NUMBER(릴리즈 번호)
+  - RELEASE_NOTE_WITH_OUT_RELEASE_NUMBER(릴리즈 노트 노티 메시지 형식에 맞춘)
+
+https://slack.com/api/chat.postMessage api 에 Post 요청을 통해 메시지를 개시하고 있습니다.
+
+
+### step / send_failure_result_to_webhook
+실페상황에서 웹훅을 통해 기본 메시지를 보내는 스텝입니다.  
+DistributionByFirebaseAppTester Job이 실패시(failure, skipped) 보내도록 분기처리가 되어있습니다.  
+skipped 상태를 추가한 이유는 선행된 Job중 need에 명시되어있는 Job이 실패할경우 자식 Job들은 Skipped처리되기 떄문에 실패처리에 포함하였습니다.
+슬랙 공식문서에 나와있는 방법으로 웹훅 url을 통해 post 요청을 보내고 있습니다.
 
 
 # 한캐 적용시 고려 사항
