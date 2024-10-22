@@ -12,6 +12,7 @@ issue 생성시(activity type : opened)
 
 후보군 및 미선정 이유:  
 - labeled / 라벨이 여러개 붙는 라벨의 갯수만큼 워크플로우가 트리거 됩니다.(자원낭비 및 깃헙액션탭 UI 가독성 저하)
+- workflow_dispatch / 워크 플로우 수동 트리거 -> 입력창의 부적절성
 
 
 
