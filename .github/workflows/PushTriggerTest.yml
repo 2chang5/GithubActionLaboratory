@@ -1,0 +1,12 @@
+name: Branch Push Test
+
+on:
+  push:
+
+jobs:
+  echo-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show branch info
+        run: |
+          echo "특정 브랜치에서만 push 트리거 동작 테스트 입니다."
