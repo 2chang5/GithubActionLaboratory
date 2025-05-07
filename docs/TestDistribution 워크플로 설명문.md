@@ -326,7 +326,7 @@ webhook url을 슬랙으로부터 발급 받아야 합니다.
 #### OAuth 발급방법
 [참고블로그](https://gengminy.tistory.com/52) 참고하셔서 OAuth 값을 발급 부탁드립니다.  
 -> Scope의 필요한 권한은 chat:write입니다.  
-![alt text](<Oauth 이미지.png>)
+![alt text](<res/Oauth 이미지.png>)
 
 #### 슬랙 메시지 Url 관련 사항
 메시지를 원하는 채널, 스레드 답글로 남기려면 채널 ID와 TimeStamp를 입력해야합니다.  
