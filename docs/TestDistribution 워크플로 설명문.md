@@ -386,3 +386,16 @@ skipped 상태를 추가한 이유는 선행된 Job중 need에 명시되어있�
 3. Buildflavor 관련 적용 및 테스트 / Build Android AAB
 4. aab파일명 단순화하도록 gradle 파일 변경 혹은 생성된 파일명을 넣도록 수정 / Build Android AAB
 5. google cloud 공용계정 생성 / upload to Firebase App Distribution
+
+
+# 추후 추가된 항목
+<details>
+  <summary>artifact 버전 변경</summary>
+  
+  최초 artifact@v3를 사용하였습니다.  
+  하지만 이후 "Missing download info for actions/upload-artifact@v3" 다음과 같은 에러가 발생  
+  확인해보니 2025.01 이후로 v3가 deprecated되어 v4를 사용하도록 변경되었습니다.   
+  [관련문서](https://github.com/orgs/community/discussions/142581)  
+</details>
+
+
