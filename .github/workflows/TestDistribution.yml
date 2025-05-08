@@ -80,7 +80,7 @@ jobs:
         # 설명 출시노트 이슈 템플릿의 +++++ 사이 텍스트를 추출하여 반환
 
       - name: upload release note as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: release_note
           path: release_note.txt
@@ -127,7 +127,7 @@ jobs:
         run: ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: apk_file
           path: app/build/outputs/apk/debug/app-debug.apk
@@ -141,13 +141,13 @@ jobs:
     if: ${{ needs.BuildAPK.result == 'success' }}
     steps:
       - name: download APK artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: apk_file
           path: app/build/outputs/apk/debug
 
       - name: download release note artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: release_note
 
@@ -171,7 +171,7 @@ jobs:
     steps:
       - name: download release note artifact
         if: ${{ needs.DistributionByFirebaseAppTester.result == 'success' }}
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: release_note
 
