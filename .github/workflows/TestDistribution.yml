@@ -144,7 +144,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: apk_file
-          path: app/build/outputs/apk/debug
 
       - name: download release note artifact
         uses: actions/download-artifact@v4
@@ -157,8 +156,8 @@ jobs:
           appId: ${{ secrets.FIREBASE_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.CREDENTIAL_FILE_CONTENT }}
           groups: ${{ needs.ReleaseNoteInputByIssue.outputs.tester_group }}
-          file: app/build/outputs/apk/debug/app-debug.apk
-          releaseNotesFile: release_note/release_note.txt
+          file: app-debug.apk
+          releaseNotesFile: release_note.txt
 
 
   # 네번째 작업 슬랙에 성공 메시지 보내기
