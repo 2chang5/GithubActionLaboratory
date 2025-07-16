@@ -1,0 +1,228 @@
+
+name: TestDistribution
+## 워크플로 설명문을 참고하시오
+
+# 트리거 ('테스트_배포' 라벨이 이슈에 라벨링 되는 시점)
+on:
+  issues:
+    types:
+      - opened
+
+jobs:
+#  이벤트 디버그용 필요시 주석 해제후 사용
+#  debug:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Show event payload
+#        run: cat $GITHUB_EVENT_PATH
+
+  CheckTrigger:
+    if: contains(join(github.event.issue.labels.*.name, ','), '테스트_배포')
+    runs-on: ubuntu-latest
+    steps:
+      - name: print current label
+        run: printf "${{ join(github.event.issue.labels.*.name, ',') }}"
+
+  # 첫번째 작업 이슈내 입력값 테스터, 출시노트 긁어오는 작업
+  ReleaseNoteInputByIssue:
+    runs-on: ubuntu-latest
+    needs: CheckTrigger
+    outputs:
+      tester_group: ${{ steps.get_tester_group.outputs.tester_group }}
+      branch_name: ${{ steps.get_branch_name.outputs.branch_name }}
+      noti_thread: ${{ steps.get_noti_thread.outputs.noti_thread }}
+
+    steps:
+      # 이슈의 본문자체를 끌어오는 작업
+      - name: get whole issue string
+        id: get_whole_issue
+        run: |
+          WHOLE_ISSUE="${{ github.event.issue.body }}"
+          echo "$WHOLE_ISSUE" > whole_issue.txt
+          printf "WHOLE_ISSUE 내용:\n%s\n" "$WHOLE_ISSUE"
+
+      # 노티할 슬랙 스레드를 뽑아내는 작업
+      - name: get slack thread link
+        id: get_noti_thread
+        run: |
+          WHOLE_ISSUE=$(cat whole_issue.txt)
+          NOTI_THREAD=$(echo "$WHOLE_ISSUE" | sed -n 's/^- *노티 스레드 링크:[[:space:]]*\(.*\)[[:space:]]*$/\1/p')
+          echo "::set-output name=noti_thread::$NOTI_THREAD"
+          echo "NOTI_THREAD 내용: $NOTI_THREAD"
+
+      # 배포할 브랜치를 뽑아내는 작업
+      - name: get branch name
+        id: get_branch_name
+        run: |
+          WHOLE_ISSUE=$(cat whole_issue.txt)
+          BRANCH_NAME=$(echo "$WHOLE_ISSUE" | sed -n 's/^- *브랜치:[[:space:]]*\(.*\)[[:space:]]*$/\1/p')
+          echo "::set-output name=branch_name::$BRANCH_NAME"
+          echo "BRANCH_NAME 내용: $BRANCH_NAME"
+
+      # 그룹 뽑아내는 작업
+      - name: get tester group
+        id: get_tester_group
+        run: |
+          WHOLE_ISSUE=$(cat whole_issue.txt)
+          TESTER_GROUP=$(echo "$WHOLE_ISSUE" | sed -n 's/^- *테스터:[[:space:]]*\(.*\)[[:space:]]*$/\1/p')
+          echo "::set-output name=tester_group::$TESTER_GROUP"
+          echo "TESTER_GROUP 내용: $TESTER_GROUP"
+        # 설명 sed -> 유닉스 계통의 텍스트 파일 조작도구(텍스트 변환용) 휴먼에러 제거를 위해 앞뒤 테스터 뒤 텍스트 앞뒤 공백 제거하는 코드 추가
+
+      # 출시노트 뽑아내는 작업
+      - name: get release note
+        id: get_release_note
+        run: |
+          WHOLE_ISSUE=$(cat whole_issue.txt)
+          RELEASE_NOTE=$(echo "$WHOLE_ISSUE" | awk '/^- 출시노트:/ {flag=1; next} flag && /^+++++/ {count++; next} count==1 {print} count==2 {exit}')
+          echo "$RELEASE_NOTE" > release_note.txt
+          printf "RELEASE_NOTE 내용:\n%s\n" "$RELEASE_NOTE"
+        # 설명 출시노트 이슈 템플릿의 +++++ 사이 텍스트를 추출하여 반환
+
+      - name: upload release note as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release_note
+          path: release_note.txt
+
+  # 두번째 작업 안드로이드 APK 빌드하는 작업
+  BuildAPK:
+    runs-on: ubuntu-latest
+    needs: ReleaseNoteInputByIssue
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.ReleaseNoteInputByIssue.outputs.branch_name }}
+          persist-credentials: false
+
+      - name: gradle cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+          cache: gradle
+
+      - name: grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Create google-services.json
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 --decode > app/google-services.json
+
+      # gradle 관련 숨김파일 생성 step 추가 필요
+
+      # 회사 코드에 적용시에는 수정 필요 flovor 관련
+      - name: build android APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk_file
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+  # 세번째 작업 배포 및 슬랙 알림 메시지
+  DistributionByFirebaseAppTester:
+    runs-on: ubuntu-latest
+    needs:
+      - ReleaseNoteInputByIssue
+      - BuildAPK
+    if: ${{ needs.BuildAPK.result == 'success' }}
+    steps:
+      - name: download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: apk_file
+
+      - name: download release note artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release_note
+
+      - name: upload to firebase app distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1.7.0
+        with:
+          appId: ${{ secrets.FIREBASE_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.CREDENTIAL_FILE_CONTENT }}
+          groups: ${{ needs.ReleaseNoteInputByIssue.outputs.tester_group }}
+          file: app-debug.apk
+          releaseNotesFile: release_note.txt
+
+
+  # 네번째 작업 슬랙에 성공 메시지 보내기
+  SlackNotify:
+    runs-on: ubuntu-latest
+    needs:
+      - DistributionByFirebaseAppTester
+      - ReleaseNoteInputByIssue
+    if: always()
+    steps:
+      - name: download release note artifact
+        if: ${{ needs.DistributionByFirebaseAppTester.result == 'success' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: release_note
+
+      - name: send_success_result_to_webhook
+        if: ${{ needs.DistributionByFirebaseAppTester.result == 'success' }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{
+           "text": "테스트 앱 배포에 성공하였습니다. :tada:",
+           "username": "GitHub Actions",
+           "icon_emoji": ":rocket:"
+          }' ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: send_success_result_to_selected_channel
+        if: ${{ needs.DistributionByFirebaseAppTester.result == 'success' }}
+        run: |
+          if [ "${{ needs.ReleaseNoteInputByIssue.outputs.noti_thread }}" != "없음" ]; then
+            NOTI_THREAD_LINK="${{ needs.ReleaseNoteInputByIssue.outputs.noti_thread }}"
+            echo "스레드 링크 추출 결과: $NOTI_THREAD_LINK"
+          
+            CHANNEL_ID=$(echo "$NOTI_THREAD_LINK" | awk -F'/archives/' '{print $2}' | awk -F'/' '{print $1}')
+            echo "채널 ID 추출 결과: $CHANNEL_ID"
+          
+            TIMESTAMP_RAW=$(echo "$NOTI_THREAD_LINK" | awk -F'/archives/' '{print $2}' | awk -F'/' '{print $2}' | sed 's/^p//')
+            THREAD_TS="${TIMESTAMP_RAW:0:10}.${TIMESTAMP_RAW:10}"
+            echo "타임스탬프 추출 결과: $THREAD_TS"
+          
+            RELEASE_NOTE=$(cat release_note.txt)
+
+            RELEASE_NUMBER=$(echo "$RELEASE_NOTE" | sed -n 's/^#\([0-9]*\).*/\1/p')
+            echo "RELEASE_NUMBER: $RELEASE_NUMBER"
+          
+            RELEASE_NOTE_WITH_OUT_RELEASE_NUMBER=$(echo "$RELEASE_NOTE" | sed '1d' | jq -Rs .| sed 's/^"//;s/"$//' | sed 's/\\r\\n/\\n/g')
+            echo "RELEASE_NOTE_WITH_OUT_RELEASE_NUMBER:$RELEASE_NOTE_WITH_OUT_RELEASE_NUMBER"
+          
+            curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.SLACK_API_TOKEN }}" \
+            -H 'Content-type: application/json' \
+            --data '{
+            "channel": "'"$CHANNEL_ID"'",   
+            "text": "<@U07SR9FH8RW>\n앱 테스터에 #'"$RELEASE_NUMBER"' 으로 테스트 앱 배포하였습니다.\n확인 부탁드립니다. :pray:\n\n# 변경사항\n'"$RELEASE_NOTE_WITH_OUT_RELEASE_NUMBER"'(cc.)",
+            "thread_ts": "'"$THREAD_TS"'",
+            "username": "자동화 봇",
+            "icon_emoji": ":rocket:"
+            }' \
+            https://slack.com/api/chat.postMessage
+          fi
+
+      - name: send_failure_result_to_webhook
+        if: ${{ needs.DistributionByFirebaseAppTester.result == 'failure' || needs.DistributionByFirebaseAppTester.result == 'skipped'}}
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{
+           "text": ":rotating_light: :rotating_light: :rotating_light: 테스트 앱 배포에 실패하였습니다. :cry: :rotating_light: :rotating_light: :rotating_light:",
+           "username": "GitHub Actions",
+           "icon_emoji": ":rocket:"
+          }' ${{ secrets.SLACK_WEBHOOK_URL }}
