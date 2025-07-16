@@ -1,7 +1,8 @@
 # GithubActionLaboratory
 깃헙액션 실험소(다양한 용도)
-## 비공개 문서 저장소
-https://github.com/2chang5/GithubActionLaboratoryPrivateDocs
+
+### [비공개 문서 저장소](https://github.com/2chang5/GithubActionLaboratoryPrivateDocs)
+
 
 ### [테스트 배포 자동화](https://github.com/2chang5/GithubActionLaboratory/tree/main/docs/%ED%85%8C%EC%8A%A4%ED%8A%B8_%EB%B0%B0%ED%8F%AC_%EC%9E%90%EB%8F%99%ED%99%94)
 - [공통사항](https://github.com/2chang5/GithubActionLaboratory/tree/main/docs/%ED%85%8C%EC%8A%A4%ED%8A%B8_%EB%B0%B0%ED%8F%AC_%EC%9E%90%EB%8F%99%ED%99%94/a.%EA%B3%B5%ED%86%B5%EC%82%AC%ED%95%AD)
