@@ -3,6 +3,12 @@ name: Branch Push Test
 on:
   push:
 
+# 실질적으로 특정브랜치에서 테스트할때 이렇게 구성함
+# on:
+#  push:
+#    branches: [ "cd_temp_test" ]
+
+
 jobs:
   echo-branch:
     runs-on: ubuntu-latest
